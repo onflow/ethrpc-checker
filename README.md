@@ -48,3 +48,7 @@ $ solc --bin --abi --evm-version london ERC20.sol -o .
 - New `config.yaml` is added for flow support.
 - Fixed some issues https://github.com/b-harvest/ethrpc-checker/issues/1
 - Added new function `GetBlockHashFromAPI` that fetches block hash from RPC API. It doesn't rely on `go-ethereum` to recalculate the block hash as it would be wrong.
+- Run tests:
+```bash
+$ go build && ./ethrpc-checker -v
+```
