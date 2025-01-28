@@ -2,11 +2,13 @@ package rpc
 
 import (
 	"context"
-	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"math/big"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -19,10 +21,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/status-im/keycard-go/hexutils"
 
-	"github.com/b-harvest/ethrpc-checker/config"
-	"github.com/b-harvest/ethrpc-checker/contracts"
-	"github.com/b-harvest/ethrpc-checker/types"
-	"github.com/b-harvest/ethrpc-checker/utils"
+	"github.com/onflow/ethrpc-checker/config"
+	"github.com/onflow/ethrpc-checker/contracts"
+	"github.com/onflow/ethrpc-checker/types"
+	"github.com/onflow/ethrpc-checker/utils"
 )
 
 // GethVersion is the version of the Geth client used in the tests
@@ -307,12 +309,17 @@ func RpcGetBlockByHash(rCtx *RpcContext) (*types.RpcResult, error) {
 		return nil, err
 	}
 
-	block, err := rCtx.EthCli.BlockByHash(context.Background(), blk.Hash())
+	blockHash, err := GetBlockHashFromAPI(rCtx, blkNum)
 	if err != nil {
 		return nil, err
 	}
 
-	if !cmp.Equal(blk, block) {
+	block, err := rCtx.EthCli.BlockByHash(context.Background(), blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if !cmp.Equal(blk.Hash(), block.Hash()) {
 		return nil, errors.New("implementation error: blockByNumber and blockByHash return different blocks")
 	}
 
@@ -503,7 +510,7 @@ func RpcSendRawTransactionDeployContract(rCtx *RpcContext) (*types.RpcResult, er
 		GasTipCap: rCtx.MaxPriorityFeePerGas,
 		GasFeeCap: new(big.Int).Add(rCtx.GasPrice, big.NewInt(1000000000)),
 		Gas:       10000000,
-		Data:      common.FromHex(hex.EncodeToString(contracts.ContractByteCode)),
+		Data:      common.FromHex(string(contracts.ContractByteCode)),
 	})
 
 	// TODO: Make signer using types.MakeSigner with chain params
@@ -701,7 +708,12 @@ func RpcGetTransactionByBlockHashAndIndex(rCtx *RpcContext) (*types.RpcResult, e
 		return nil, errors.New("no transactions in the block")
 	}
 
-	tx, err := rCtx.EthCli.TransactionInBlock(context.Background(), blk.Hash(), 0)
+	blockHash, err := GetBlockHashFromAPI(rCtx, blkNum)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := rCtx.EthCli.TransactionInBlock(context.Background(), blockHash, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -728,7 +740,7 @@ func RpcGetTransactionByBlockNumberAndIndex(rCtx *RpcContext) (*types.RpcResult,
 	// TODO: Random pick
 	blkNum := rCtx.BlockNumsIncludingTx[0]
 	var tx gethtypes.Transaction
-	if err := rCtx.EthCli.Client().CallContext(context.Background(), &tx, string(GetTransactionByBlockNumberAndIndex), blkNum, "0x0"); err != nil {
+	if err := rCtx.EthCli.Client().CallContext(context.Background(), &tx, string(GetTransactionByBlockNumberAndIndex), fmt.Sprintf("0x%x", blkNum), "0x0"); err != nil {
 		return nil, err
 	}
 
@@ -808,12 +820,17 @@ func RpcGetBlockTransactionCountByHash(rCtx *RpcContext) (*types.RpcResult, erro
 	}
 
 	blkNum := rCtx.BlockNumsIncludingTx[0]
-	blk, err := rCtx.EthCli.BlockByNumber(context.Background(), new(big.Int).SetUint64(blkNum))
+	// blk, err := rCtx.EthCli.BlockByNumber(context.Background(), new(big.Int).SetUint64(blkNum))
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	blockHash, err := GetBlockHashFromAPI(rCtx, blkNum)
 	if err != nil {
 		return nil, err
 	}
 
-	count, err := rCtx.EthCli.TransactionCount(context.Background(), blk.Hash())
+	count, err := rCtx.EthCli.TransactionCount(context.Background(), blockHash)
 	if err != nil {
 		return nil, err
 	}
@@ -889,6 +906,10 @@ func RpcGetStorageAt(rCtx *RpcContext) (*types.RpcResult, error) {
 func RpcNewFilter(rCtx *RpcContext) (*types.RpcResult, error) {
 	if result := rCtx.AlreadyTested(NewFilter); result != nil {
 		return result, nil
+	}
+
+	if len(rCtx.BlockNumsIncludingTx) == 0 {
+		return nil, errors.New("no blocks with transactions")
 	}
 
 	fErc20Transfer := ethereum.FilterQuery{
@@ -1175,4 +1196,41 @@ func WaitForTx(rCtx *RpcContext, txHash common.Hash, timeout time.Duration) erro
 			}
 		}
 	}
+}
+
+// GetBlockHash returns the hash of the block at the given block number
+// It doesn't re-calculate the hash, it just returns the hash of the block based on API response
+// go-ethereum calculates wrong block hashes for Flow blocks
+func GetBlockHashFromAPI(rCtx *RpcContext, blkNum uint64) (common.Hash, error) {
+	var blkHash common.Hash
+	rpcBody := fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x", true],"id":1}`, blkNum)
+	req, err := http.NewRequest("POST", rCtx.Conf.RpcEndpoint, strings.NewReader(rpcBody))
+	if err != nil {
+		return blkHash, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return blkHash, err
+	}
+	defer resp.Body.Close()
+
+	var raw map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return blkHash, err
+	}
+
+	result, ok := raw["result"].(map[string]interface{})
+	if !ok {
+		return blkHash, errors.New("no result in RPC response")
+	}
+
+	blockHash, ok := result["hash"].(string)
+	if !ok {
+		return blkHash, errors.New("no block hash in RPC result")
+	}
+
+	return common.HexToHash(blockHash), nil
 }

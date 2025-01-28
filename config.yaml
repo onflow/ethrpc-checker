@@ -1,3 +1,9 @@
-rpc_endpoint: "http://localhost:8545"
-rich_privkey: "b9d15599650f41dc705d1edf676830117d14bf41f7a06dac5d13228507cff77f" # addr: 0xb14A5cF6D0F5a3B133d3cd3F396f756E091b8f65
-timeout: "10s"
+# flow testnet
+rpc_endpoint: "https://testnet.evm.nodes.onflow.org"
+rich_privkey: "" # addr: 0xD11b172514776BA75a32B2096295262381119f01
+timeout: "30s"
+
+# ethereum rinkeby
+# rpc_endpoint: "https://sepolia.infura.io/v3/9e2bf2f0c40247e3a6bf5053eb57cdf5"
+# rich_privkey: "e90430d49f3ec0665daf0ef2135c358ecbc304cadcf5d6895485165de10e70cf" # addr: 0x00198Ae847F3cA9cb5ca9Cd840e984292aA6C334
+# timeout: "30s"

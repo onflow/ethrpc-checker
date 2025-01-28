@@ -9,9 +9,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/xuri/excelize/v2"
 
-	"github.com/b-harvest/ethrpc-checker/rpc"
-	"github.com/b-harvest/ethrpc-checker/types"
-	"github.com/b-harvest/ethrpc-checker/utils"
+	"github.com/onflow/ethrpc-checker/rpc"
+	"github.com/onflow/ethrpc-checker/types"
+	"github.com/onflow/ethrpc-checker/utils"
 )
 
 // ReportResults prints or saves the RPC results based on the verbosity flag and output format

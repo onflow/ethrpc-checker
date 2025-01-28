@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "embed"
-	"encoding/hex"
 	"flag"
 	"log"
 	"os"
@@ -11,11 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/b-harvest/ethrpc-checker/config"
-	"github.com/b-harvest/ethrpc-checker/contracts"
-	"github.com/b-harvest/ethrpc-checker/report"
-	"github.com/b-harvest/ethrpc-checker/rpc"
-	"github.com/b-harvest/ethrpc-checker/types"
+	"github.com/onflow/ethrpc-checker/config"
+	"github.com/onflow/ethrpc-checker/contracts"
+	"github.com/onflow/ethrpc-checker/report"
+	"github.com/onflow/ethrpc-checker/rpc"
+	"github.com/onflow/ethrpc-checker/types"
 )
 
 func main() {
@@ -56,7 +55,6 @@ func main() {
 		{rpc.GetTransactionByBlockHashAndIndex, rpc.RpcGetTransactionByBlockHashAndIndex},
 		{rpc.GetTransactionByBlockNumberAndIndex, rpc.RpcGetTransactionByBlockNumberAndIndex},
 		{rpc.GetTransactionReceipt, rpc.RpcGetTransactionReceipt},
-		{rpc.GetTransactionCountByHash, rpc.RpcGetTransactionCountByHash},
 		{rpc.GetBlockTransactionCountByHash, rpc.RpcGetBlockTransactionCountByHash},
 		{rpc.GetCode, rpc.RpcGetCode},
 		{rpc.GetStorageAt, rpc.RpcGetStorageAt},
@@ -100,7 +98,7 @@ func MustLoadContractInfo(rCtx *rpc.RpcContext) *rpc.RpcContext {
 	}
 	rCtx.ERC20Abi = &parsedABI
 	// Read the compiled contract bytecode
-	contractBytecode := common.FromHex(hex.EncodeToString(contracts.ContractByteCode))
+	contractBytecode := common.FromHex(string(contracts.ContractByteCode))
 	rCtx.ERC20ByteCode = contractBytecode
 
 	return rCtx

@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/b-harvest/ethrpc-checker/types"
+	"github.com/onflow/ethrpc-checker/types"
 )
 
 const (

@@ -1,4 +1,4 @@
-module github.com/b-harvest/ethrpc-checker
+module github.com/onflow/ethrpc-checker
 
 go 1.22
 
