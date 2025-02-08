@@ -1,31 +1,33 @@
 package main
 
 import (
-	"errors"
-	"fmt"
+	_ "embed"
+	"flag"
+	"log"
+	"os"
+	"strings"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/onflow/ethrpc-checker/config"
+	"github.com/onflow/ethrpc-checker/contracts"
+	"github.com/onflow/ethrpc-checker/report"
 	"github.com/onflow/ethrpc-checker/rpc"
 	"github.com/onflow/ethrpc-checker/types"
 )
 
-// DoTests performs the tests on the given rpc endpoint and rich privkey
-// and returns an error if any of the tests failed
-func DoTests(
-	rpcEndpoint string,
-	richPrivkey string,
-	timeout string,
-) error {
+func main() {
+	verbose := flag.Bool("v", false, "Enable verbose output")
+	outputExcel := flag.Bool("xlsx", false, "Save output as xlsx")
+	flag.Parse()
 
-	conf := &config.Config{
-		RpcEndpoint: rpcEndpoint,
-		RichPrivKey: richPrivkey,
-		Timeout:     timeout,
-	}
+	// Load configuration from conf.yaml
+	conf := config.MustLoadConfig("config.yaml")
 
 	rCtx, err := rpc.NewContext(conf)
 	if err != nil {
-		return fmt.Errorf("failed to create context: %v", err)
+		log.Fatalf("Failed to create context: %v", err)
 	}
 
 	rCtx = MustLoadContractInfo(rCtx)
@@ -80,20 +82,24 @@ func DoTests(
 	}
 	results = append(results, rCtx.AlreadyTestedRPCs...)
 
-	errMsg := ""
-	failed := false
-	for _, r := range results {
-		if r.Status == types.Error {
-			failed = true
-			errMsg += fmt.Sprintf(`
-			%s failed: %s
-			`, r.Method, r.ErrMsg)
-		}
-	}
+	report.ReportResults(results, *verbose, *outputExcel)
+}
 
-	if failed {
-		return errors.New(errMsg)
+func MustLoadContractInfo(rCtx *rpc.RpcContext) *rpc.RpcContext {
+	// Read the ABI file
+	abiFile, err := os.ReadFile("../contracts/ERC20Token.abi")
+	if err != nil {
+		log.Fatalf("Failed to read ABI file: %v", err)
 	}
+	// Parse the ABI
+	parsedABI, err := abi.JSON(strings.NewReader(string(abiFile)))
+	if err != nil {
+		log.Fatalf("Failed to parse ERC20 ABI: %v", err)
+	}
+	rCtx.ERC20Abi = &parsedABI
+	// Read the compiled contract bytecode
+	contractBytecode := common.FromHex(string(contracts.ContractByteCode))
+	rCtx.ERC20ByteCode = contractBytecode
 
-	return nil
+	return rCtx
 }

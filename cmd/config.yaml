@@ -1,0 +1,14 @@
+# flow emulator
+# rpc_endpoint: "http://localhost:8545"
+# rich_privkey: "e69bed18036021ba2c3b52f95524f253f48f128c3bf9527c3ae5b35874360083" # addr: 0xF9Cc9ad439316e6C94068727d4543B0c5b759Fe1
+# timeout: "30s"
+
+# flow testnet
+rpc_endpoint: "https://testnet.evm.nodes.onflow.org"
+rich_privkey: "814a5e6bdf568bf24dc17c2493441e4a0039f9d52a031bcbe94bb9c6b54ae4b4" # addr: 0xD11b172514776BA75a32B2096295262381119f01
+timeout: "30s"
+
+# ethereum rinkeby
+# rpc_endpoint: "https://sepolia.infura.io/v3/9e2bf2f0c40247e3a6bf5053eb57cdf5"
+# rich_privkey: "e90430d49f3ec0665daf0ef2135c358ecbc304cadcf5d6895485165de10e70cf" # addr: 0x00198Ae847F3cA9cb5ca9Cd840e984292aA6C334
+# timeout: "30s"

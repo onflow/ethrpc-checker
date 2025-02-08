@@ -9,8 +9,9 @@
 
 ## How to Run
 ```bash
+$ cd cmd
 # build the project
-$ go build
+$ go build -o ethrpc-checker
 # run the project
 $ ./ethrpc-checker -v -xlsx
 ```
@@ -19,7 +20,7 @@ $ ./ethrpc-checker -v -xlsx
 
 ## Setup
 ### Config
-- Update config.yaml based on your environment.
+- Update cmd/config.yaml based on your environment.
 ```yaml
 rpc_endpoint: "http://localhost:8545"
 # rich_privkey: private key of the account that has enough balance to send transactions
@@ -50,5 +51,6 @@ $ solc --bin --abi --evm-version london ERC20.sol -o .
 - Added new function `GetBlockHashFromAPI` that fetches block hash from RPC API. It doesn't rely on `go-ethereum` to recalculate the block hash as it would be wrong.
 - Run tests:
 ```bash
-$ go build && ./ethrpc-checker -v
+$ cd cmd
+$ go build -o ethrpc-checker && ./ethrpc-checker -v
 ```

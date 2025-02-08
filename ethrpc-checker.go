@@ -1,8 +1,8 @@
-package main
+package ethrpc_checker
 
 import (
-	_ "embed"
-	"flag"
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -12,22 +12,27 @@ import (
 
 	"github.com/onflow/ethrpc-checker/config"
 	"github.com/onflow/ethrpc-checker/contracts"
-	"github.com/onflow/ethrpc-checker/report"
 	"github.com/onflow/ethrpc-checker/rpc"
 	"github.com/onflow/ethrpc-checker/types"
 )
 
-func main() {
-	verbose := flag.Bool("v", false, "Enable verbose output")
-	outputExcel := flag.Bool("xlsx", false, "Save output as xlsx")
-	flag.Parse()
+// DoTests performs the tests on the given rpc endpoint and rich privkey
+// and returns an error if any of the tests failed
+func DoTests(
+	rpcEndpoint string,
+	richPrivkey string,
+	timeout string,
+) error {
 
-	// Load configuration from conf.yaml
-	conf := config.MustLoadConfig("config.yaml")
+	conf := &config.Config{
+		RpcEndpoint: rpcEndpoint,
+		RichPrivKey: richPrivkey,
+		Timeout:     timeout,
+	}
 
 	rCtx, err := rpc.NewContext(conf)
 	if err != nil {
-		log.Fatalf("Failed to create context: %v", err)
+		return fmt.Errorf("failed to create context: %v", err)
 	}
 
 	rCtx = MustLoadContractInfo(rCtx)
@@ -82,7 +87,22 @@ func main() {
 	}
 	results = append(results, rCtx.AlreadyTestedRPCs...)
 
-	report.ReportResults(results, *verbose, *outputExcel)
+	errMsg := ""
+	failed := false
+	for _, r := range results {
+		if r.Status == types.Error {
+			failed = true
+			errMsg += fmt.Sprintf(`
+			%s failed: %s
+			`, r.Method, r.ErrMsg)
+		}
+	}
+
+	if failed {
+		return errors.New(errMsg)
+	}
+
+	return nil
 }
 
 func MustLoadContractInfo(rCtx *rpc.RpcContext) *rpc.RpcContext {
