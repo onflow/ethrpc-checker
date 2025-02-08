@@ -3,7 +3,7 @@ module github.com/onflow/ethrpc-checker
 go 1.22
 
 require (
-	github.com/ethereum/go-ethereum v1.14.7
+	github.com/ethereum/go-ethereum v1.13.10
 	github.com/fatih/color v1.16.0
 	github.com/google/go-cmp v0.5.9
 	github.com/status-im/keycard-go v0.2.0
